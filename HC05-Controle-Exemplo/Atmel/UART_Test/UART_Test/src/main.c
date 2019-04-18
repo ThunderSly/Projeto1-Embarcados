@@ -31,9 +31,6 @@
 #include <asf.h>
 #include <string.h>
 
-// Descomente o define abaixo, para desabilitar o Bluetooth e utilizar modo Serial via Cabo
-//#define DEBUG_SERIAL
-
 #define BUT2_PIO_ID				ID_PIOC
 #define BUT2_PIO				PIOC
 #define BUT2_PIO_IDX			31
@@ -68,7 +65,20 @@ volatile uint8_t flag_but8 = 0;
 volatile uint8_t flag_but9 = 0;
 volatile uint8_t flag_but10 = 0;
 volatile uint8_t flag_but11 = 0;
+volatile uint8_t flag_change = 0;
 
+volatile uint8_t value_but0 = 0;
+volatile uint8_t value_but1 = 0;
+volatile uint8_t value_but2 = 0;
+volatile uint8_t value_but3 = 0;
+volatile uint8_t value_but4 = 0;
+volatile uint8_t value_but5 = 0;
+volatile uint8_t value_but6 = 0;
+volatile uint8_t value_but7 = 0;
+volatile uint8_t value_but8 = 0;
+volatile uint8_t value_but9 = 0;
+volatile uint8_t value_but10 = 0;
+volatile uint8_t value_but11 = 0;
 
 void SysTick_Handler() {
 	g_systimer++;
@@ -86,7 +96,7 @@ void config_console(void) {
 }
 
 void usart_put_string(Usart *usart, char str[]) {
-	usart_serial_write_packet(usart, str, sizeof(str));
+	usart_serial_write_packet(usart, str, strlen(str));
 }
 
 int usart_get_string(Usart *usart, char buffer[], int bufferlen, int timeout_ms) {
@@ -143,6 +153,66 @@ int hc05_server_init(void) {
 	usart_log("hc05_server_init", buffer_rx);
 }
 
+// void Button0_Handler(void){
+// 	flag_but0 = 1;
+// 	value_but0 = !pio_get(BUT0_PIO, PIO_INPUT, BUT0_PIO_IDX_MASK);
+// }
+// 
+// void Button1_Handler(void){
+// 	flag_but1 = 1;
+// 	value_but1 = !pio_get(BUT1_PIO, PIO_INPUT, BUT1_PIO_IDX_MASK);
+// }
+
+void Button2_Handler(void){
+	flag_but2 = 1;
+	value_but2 = !pio_get(BUT2_PIO, PIO_INPUT, BUT2_PIO_IDX_MASK);
+}
+
+void Button3_Handler(void){
+	flag_but3 = 1;
+	value_but3 = !pio_get(BUT3_PIO, PIO_INPUT, BUT3_PIO_IDX_MASK);
+}
+
+// void Button4_Handler(void){
+// 	flag_but4 = 1;
+// 	value_but4 = !pio_get(BUT4_PIO, PIO_INPUT, BUT4_PIO_IDX_MASK);
+// }
+// 
+// void Button5_Handler(void){
+// 	flag_but5 = 1;
+// 	value_but5 = !pio_get(BUT5_PIO, PIO_INPUT, BUT5_PIO_IDX_MASK);
+// }
+// 
+// void Button6_Handler(void){
+// 	flag_but6 = 1;
+// 	value_but6 = !pio_get(BUT6_PIO, PIO_INPUT, BUT6_PIO_IDX_MASK);
+// }
+// 
+// void Button7_Handler(void){
+// 	flag_but7 = 1;
+// 	value_but7 = !pio_get(BUT7_PIO, PIO_INPUT, BUT7_PIO_IDX_MASK);
+// }
+// 
+// void Button8_Handler(void){
+// 	flag_but8 = 1;
+// 	value_but8 = !pio_get(BUT8_PIO, PIO_INPUT, BUT8_PIO_IDX_MASK);
+// }
+// 
+// void Button9_Handler(void){
+// 	flag_but9 = 1;
+// 	value_but9 = !pio_get(BUT9_PIO, PIO_INPUT, BUT9_PIO_IDX_MASK);
+// }
+// 
+// void Button10_Handler(void){
+// 	flag_but10 = 1;
+// 	value_but10 = !pio_get(BUT10PIO, PIO_INPUT, BUT10_PIO_IDX_MASK);
+// }
+// 
+// void Button11_Handler(void){
+// 	flag_but11 = 1;
+// 	value_but11 = !pio_get(BUT11_PIO, PIO_INPUT, BUT11_PIO_IDX_MASK);
+// }
+
 void BUT_init(void){
 	//TERMINAR INIT PARA TODOS OS BOTOES
 	pmc_enable_periph_clk(BUT2_PIO_ID);
@@ -154,8 +224,8 @@ void BUT_init(void){
 	pio_enable_interrupt(BUT2_PIO, BUT2_PIO_IDX_MASK);
 	pio_enable_interrupt(BUT3_PIO, BUT3_PIO_IDX_MASK);
 	
-	pio_handler_set(BUT2_PIO, BUT2_PIO_ID, BUT2_PIO_IDX_MASK, PIO_IT_FALL_EDGE, Button2_Handler);
-	pio_handler_set(BUT3_PIO, BUT3_PIO_ID, BUT3_PIO_IDX_MASK, PIO_IT_FALL_EDGE, Button3_Handler);
+	pio_handler_set(BUT2_PIO, BUT2_PIO_ID, BUT2_PIO_IDX_MASK, PIO_IT_EDGE, Button2_Handler);
+	pio_handler_set(BUT3_PIO, BUT3_PIO_ID, BUT3_PIO_IDX_MASK, PIO_IT_EDGE, Button3_Handler);
 	
 	NVIC_EnableIRQ(BUT2_PIO_ID);
 	NVIC_SetPriority(BUT2_PIO_ID, 1);
@@ -163,54 +233,6 @@ void BUT_init(void){
 	NVIC_EnableIRQ(BUT3_PIO_ID);
 	NVIC_SetPriority(BUT3_PIO_ID, 1);
 };
-
-void Button0_Handler(void){
-	flag_but0 = 1;
-}
-
-void Button1_Handler(void){
-	flag_but1 = 1;
-}
-
-void Button2_Handler(void){
-	flag_but2 = 1;
-}
-
-void Button3_Handler(void){
-	flag_but3 = 1;
-}
-
-void Button4_Handler(void){
-	flag_but4 = 1;
-}
-
-void Button5_Handler(void){
-	flag_but5 = 1;
-}
-
-void Button6_Handler(void){
-	flag_but6 = 1;
-}
-
-void Button7_Handler(void){
-	flag_but7 = 1;
-}
-
-void Button8_Handler(void){
-	flag_but8 = 1;
-}
-
-void Button9_Handler(void){
-	flag_but9 = 1;
-}
-
-void Button10_Handler(void){
-	flag_but10 = 1;
-}
-
-void Button11_Handler(void){
-	flag_but11 = 1;
-}
 
 int main (void)
 {
@@ -226,121 +248,176 @@ int main (void)
 	hc05_config_server();
 	hc05_server_init();
 	#endif
+	BUT_init();
 	
-	char button0 = '0';
-	char button1 = '0';
-	char button2 = '0';
-	char button3 = '0';
-	char button4 = '0';
-	char button5 = '0';
-	char button6 = '0';
-	char button7 = '0';
-	char button8 = '0';
-	char button9 = '0';
-	char button10 = '0';
-	char button11 = '0';
 	char eof = 'X';
 	char buffer[1024];
 	
 	while(1) {
+		char button0 = 'N';
+		char button1 = 'N';
+		char button2 = 'N';
+		char button3 = 'N';
+		char button4 = 'N';
+		char button5 = 'N';
+		char button6 = 'N';
+		char button7 = 'N';
+		char button8 = 'N';
+		char button9 = 'N';
+		char button10 = 'N';
+		char button11 = 'N';
+		
 		if(flag_but0) {
-			button0 = '1';
+			if(value_but0){
+				button0 = '1';
+			}
+			else{
+				button0 = '0';
+			}
 			flag_but0 = 0;
-		} else {
-			button0 = '0';
+			flag_change = 1;
 		}
 		if(flag_but1) {
-			button1 = '1';
+			if(value_but1){
+				button1 = '1';
+			}
+			else{
+				button1 = '0';
+			}
 			flag_but1 = 0;
-			} else {
-			button1 = '0';
+			flag_change = 1;
 		}
 		if(flag_but2) {
-			button2 = '1';
+			if(value_but2){
+				button2 = '1';
+			}
+			else{
+				button2 = '0';
+			}
 			flag_but2 = 0;
-			} else {
-			button2 = '0';
+			flag_change = 1;
 		}
 		if(flag_but3) {
-			button3 = '1';
+			if(value_but3){
+				button3 = '1';
+			}
+			else{
+				button3 = '0';
+			}
 			flag_but3 = 0;
-			} else {
-			button3 = '0';
+			flag_change = 1;
 		}
 		if(flag_but4) {
-			button4 = '1';
+			if(value_but4){
+				button4 = '1';
+			}
+			else{
+				button4 = '0';
+			}
 			flag_but4 = 0;
-			} else {
-			button4 = '0';
+			flag_change = 1;
 		}
 		if(flag_but5) {
-			button5 = '1';
+			if(value_but5){
+				button5 = '1';
+			}
+			else{
+				button5 = '0';
+			}
 			flag_but5 = 0;
-			} else {
-			button5 = '0';
+			flag_change = 1;
 		}
 		if(flag_but6) {
-			button6 = '1';
+			if(value_but6){
+				button6 = '1';
+			}
+			else{
+				button6 = '0';
+			}
 			flag_but6 = 0;
-			} else {
-			button6 = '0';
+			flag_change = 1;
 		}
 		if(flag_but7) {
-			button7 = '1';
+			if(value_but7){
+				button7 = '1';
+			}
+			else{
+				button7 = '0';
+			}
 			flag_but7 = 0;
-			} else {
-			button7 = '0';
+			flag_change = 1;
 		}
 		if(flag_but8) {
-			button8 = '1';
+			if(value_but8){
+				button8 = '1';
+			}
+			else{
+				button8 = '0';
+			}
 			flag_but8 = 0;
-			} else {
-			button8 = '0';
+			flag_change = 1;
 		}
 		if(flag_but9) {
-			button9 = '1';
+			if(value_but9){
+				button9 = '1';
+			}
+			else{
+				button9 = '0';
+			}
 			flag_but9 = 0;
-			} else {
-			button9 = '0';
+			flag_change = 1;
 		}
 		if(flag_but10) {
-			button10 = '1';
+			if(value_but10){
+				button10 = '1';
+			}
+			else{
+				button10 = '0';
+			}
 			flag_but10 = 0;
-			} else {
-			button10 = '0';
+			flag_change = 1;
 		}
 		if(flag_but11) {
-			button11 = '1';
+			if(value_but11){
+				button11 = '1';
+			}
+			else{
+				button11 = '0';
+			}
 			flag_but11 = 0;
-			} else {
-			button11 = '0';
+			flag_change = 1;
 		}
-		
-		while(!usart_is_tx_ready(UART_COMM));
-		usart_write(UART_COMM, button0);
-		while(!usart_is_tx_ready(UART_COMM));
-		usart_write(UART_COMM, button1);
-		while(!usart_is_tx_ready(UART_COMM));
-		usart_write(UART_COMM, button2);
-		while(!usart_is_tx_ready(UART_COMM));
-		usart_write(UART_COMM, button3);
-		while(!usart_is_tx_ready(UART_COMM));
-		usart_write(UART_COMM, button4);
-		while(!usart_is_tx_ready(UART_COMM));
-		usart_write(UART_COMM, button5);		
-		while(!usart_is_tx_ready(UART_COMM));
-		usart_write(UART_COMM, button6);
-		while(!usart_is_tx_ready(UART_COMM));
-		usart_write(UART_COMM, button7);
-		while(!usart_is_tx_ready(UART_COMM));
-		usart_write(UART_COMM, button8);
-		while(!usart_is_tx_ready(UART_COMM));
-		usart_write(UART_COMM, button9);
-		while(!usart_is_tx_ready(UART_COMM));
-		usart_write(UART_COMM, button10);
-		while(!usart_is_tx_ready(UART_COMM));
-		usart_write(UART_COMM, button11);
-		while(!usart_is_tx_ready(UART_COMM));
-		usart_write(UART_COMM, eof);
+		if(flag_change){
+			while(!usart_is_tx_ready(UART_COMM));
+			usart_write(UART_COMM, button0);
+			while(!usart_is_tx_ready(UART_COMM));
+			usart_write(UART_COMM, button1);
+			while(!usart_is_tx_ready(UART_COMM));
+			usart_write(UART_COMM, button2);
+			while(!usart_is_tx_ready(UART_COMM));
+			usart_write(UART_COMM, button3);
+			while(!usart_is_tx_ready(UART_COMM));
+			usart_write(UART_COMM, button4);
+			while(!usart_is_tx_ready(UART_COMM));
+			usart_write(UART_COMM, button5);
+			while(!usart_is_tx_ready(UART_COMM));
+			usart_write(UART_COMM, button6);
+			while(!usart_is_tx_ready(UART_COMM));
+			usart_write(UART_COMM, button7);
+			while(!usart_is_tx_ready(UART_COMM));
+			usart_write(UART_COMM, button8);
+			while(!usart_is_tx_ready(UART_COMM));
+			usart_write(UART_COMM, button9);
+			while(!usart_is_tx_ready(UART_COMM));
+			usart_write(UART_COMM, button10);
+			while(!usart_is_tx_ready(UART_COMM));
+			usart_write(UART_COMM, button11);
+			while(!usart_is_tx_ready(UART_COMM));
+			usart_write(UART_COMM, eof);
+			flag_change = 0;
+		}
+		else{
+			pmc_sleep(SAM_PM_SMODE_SLEEP_WFI);
+		}
 	}
 }

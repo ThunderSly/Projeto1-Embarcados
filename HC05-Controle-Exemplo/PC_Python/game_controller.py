@@ -6,7 +6,7 @@ import pyvjoy # Windows apenas
 
 class MyControllerMap:
     def __init__(self):
-        self.button = {'A': 1}
+        self.button = {'A': 1, 'B': 2}
 
 
 class SerialControllerInterface:
@@ -27,15 +27,24 @@ class SerialControllerInterface:
             self.incoming = self.ser.read()
             logging.debug("Receivelllld INCOMING: {}".format(self.incoming))
 
-        data = self.ser.read()
+        data = self.ser.read(12)
+        print(data)
         logging.debug("Received DATA: {}".format(data))
-
-        if data == b'1':
-            logging.info("Sending press")
+        data_format = bytearray(data).decode('ascii')
+        print(data_format)
+        um,dois,A,B, cinco, seis, sete, oito, nove, dez, onze, doze = data_format
+        print(A)
+        print(B)
+        if A == '1':
+            logging.info("Sending A")
             self.j.set_button(self.mapping.button['A'], 1)
-        elif data == b'0':
+        elif A == '0':
             self.j.set_button(self.mapping.button['A'], 0)
-
+        if B == '1':
+            logging.info("Sending B")
+            self.j.set_button(self.mapping.button['B'], 1)
+        elif B == '0':
+            self.j.set_button(self.mapping.button['B'], 0)
         self.incoming = self.ser.read()
 
 
