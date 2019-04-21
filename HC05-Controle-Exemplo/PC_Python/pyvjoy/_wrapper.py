@@ -6,6 +6,9 @@ from ctypes import *
 dll_filename = "vJoyInterface.dll"
 dll_path = os.path.dirname(__file__) + os.sep + dll_filename
 
+#dll_path = "C:\\Users\\User\\Documents\\Insper\\Projeto1-Embarcados\\HC05-Controle-Exemplo\\PC_Python\\pyvjoy\\vJoyInterface.dll"
+
+
 try:
 	_vj = cdll.LoadLibrary(dll_path)
 except OSError:

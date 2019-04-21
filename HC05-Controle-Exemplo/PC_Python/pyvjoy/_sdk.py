@@ -8,7 +8,9 @@ from pyvjoy.exceptions import *
 
 from ctypes import wintypes	# Makes this lib work in Python36
 
+
 dll_path = os.path.dirname(__file__) + os.sep + DLL_FILENAME
+#dll_path = "C:\\Users\\User\\Documents\\Insper\\Projeto1-Embarcados\\HC05-Controle-Exemplo\\PC_Python\\pyvjoy\\vJoyInterface.dll"
 
 try:
 	_vj = cdll.LoadLibrary(dll_path)
