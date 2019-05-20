@@ -75,6 +75,17 @@ volatile bool g_delay = false;
 #define LED_PIO_IDX       8u
 #define LED_PIO_IDX_MASK  (1u << LED_PIO_IDX)
 
+#define LED2_PIO           PIOC
+#define LED2_PIO_ID        12
+#define LED2_PIO_IDX       8u
+#define LED2_PIO_IDX_MASK  (1u << LED_PIO_IDX)
+
+// POWER BUTTON
+#define BUTPWR_PIO_ID			ID_PIOA
+#define BUTPWR_PIO				PIOA
+#define BUTPWR_PIO_IDX			11
+#define BUTPWR_PIO_IDX_MASK		(1 << BUTPWR_PIO_IDX)
+#define BUTPWR_DEBOUNCING_VALUE   79
 
 // Analog Button
 #define BUT0_PIO_ID				ID_PIOC
@@ -144,6 +155,7 @@ volatile bool g_delay = false;
 
 volatile long g_systimer = 0;
 
+volatile uint8_t flag_PWR = 0;
 volatile uint8_t flag_but0 = 0;
 volatile uint8_t flag_but1 = 0;
 volatile uint8_t flag_but2 = 0;
@@ -293,6 +305,16 @@ int hc05_server_init(void) {
 	usart_send_command(USART0, buffer_rx, 1000, "AT", 1000);
 	usart_send_command(USART0, buffer_rx, 1000, "AT+PIN1337", 1000);
 	usart_log("hc05_server_init", buffer_rx);
+}
+
+void ButtonPWR_Handler(void){
+	flag_PWR = !flag_PWR;
+	if(flag_PWR){
+		pio_clear(LED2_PIO, LED2_PIO_IDX_MASK);
+	}
+	else{
+		pio_set(LED2_PIO, LED2_PIO_IDX_MASK);
+	}
 }
 
 void Button0_Handler(void){
@@ -446,6 +468,7 @@ void BUT_init(void){
 	pmc_enable_periph_clk(ID_PIOC);
 	pmc_enable_periph_clk(ID_PIOD);
 	
+	pio_set_input(BUTPWR_PIO, BUTPWR_PIO_IDX_MASK, PIO_PULLUP | PIO_DEBOUNCE);	
 	pio_set_input(BUT0_PIO, BUT0_PIO_IDX_MASK, PIO_PULLUP | PIO_DEBOUNCE);	
 	pio_set_input(BUT1_PIO, BUT1_PIO_IDX_MASK, PIO_PULLUP | PIO_DEBOUNCE);
 	pio_set_input(BUT2_PIO, BUT2_PIO_IDX_MASK, PIO_PULLUP | PIO_DEBOUNCE);
@@ -457,6 +480,7 @@ void BUT_init(void){
 	pio_set_input(BUT10_PIO, BUT10_PIO_IDX_MASK, PIO_PULLUP | PIO_DEBOUNCE);
 	pio_set_input(BUT11_PIO, BUT11_PIO_IDX_MASK, PIO_PULLUP | PIO_DEBOUNCE);
 
+	pio_enable_interrupt(BUTPWR_PIO, BUTPWR_PIO_IDX_MASK);
 	pio_enable_interrupt(BUT0_PIO, BUT0_PIO_IDX_MASK);
 	pio_enable_interrupt(BUT1_PIO, BUT1_PIO_IDX_MASK);
 	pio_enable_interrupt(BUT2_PIO, BUT2_PIO_IDX_MASK);
@@ -468,6 +492,7 @@ void BUT_init(void){
 	pio_enable_interrupt(BUT10_PIO, BUT10_PIO_IDX_MASK);
 	pio_enable_interrupt(BUT11_PIO, BUT11_PIO_IDX_MASK);
 	
+	pio_handler_set(BUTPWR_PIO, BUTPWR_PIO_ID, BUT0_PIO_IDX_MASK, PIO_IT_EDGE, ButtonPWR_Handler);
 	pio_handler_set(BUT0_PIO, BUT0_PIO_ID, BUT0_PIO_IDX_MASK, PIO_IT_EDGE, Button0_Handler);
 	pio_handler_set(BUT1_PIO, BUT1_PIO_ID, BUT1_PIO_IDX_MASK, PIO_IT_EDGE, Button1_Handler);
 	pio_handler_set(BUT2_PIO, BUT2_PIO_ID, BUT2_PIO_IDX_MASK, PIO_IT_EDGE, Button2_Handler);
@@ -478,6 +503,9 @@ void BUT_init(void){
 	pio_handler_set(BUT9_PIO, BUT9_PIO_ID, BUT9_PIO_IDX_MASK, PIO_IT_EDGE, Button9_Handler);
 	pio_handler_set(BUT10_PIO, BUT10_PIO_ID, BUT10_PIO_IDX_MASK, PIO_IT_EDGE, Button10_Handler);
 	pio_handler_set(BUT11_PIO, BUT11_PIO_ID, BUT11_PIO_IDX_MASK, PIO_IT_EDGE, Button11_Handler);
+	
+	NVIC_EnableIRQ(BUTPWR_PIO_ID);
+	NVIC_SetPriority(BUTPWR_PIO_ID, 1);
 	
 	NVIC_EnableIRQ(BUT0_PIO_ID);
 	NVIC_SetPriority(BUT0_PIO_ID, 1);
@@ -524,7 +552,9 @@ int main (void){
 	TC_init(TC0, ID_TC1, 1, 1);
 	TC_init(TC0, ID_TC0, 0, 10);
 	pio_set_output(LED_PIO, LED_PIO_IDX_MASK, 0, 0, 0);
-	pio_set(PIOC, LED_PIO_IDX_MASK);
+	pio_set_output(LED2_PIO, LED2_PIO_IDX_MASK, 0, 0, 0);
+	pio_set(LED_PIO, LED_PIO_IDX_MASK);
+	pio_set(LED2_PIO, LED2_PIO_IDX_MASK);
 	
 	
 	
@@ -549,260 +579,265 @@ int main (void){
 	char axisY = '0';
 	
 	while(1) {
-		char button0 = 'N';
-		char button1 = 'N';
-		char button2 = 'N';
-		char button3 = 'N';
-		char button4 = 'N';
-		char button5 = 'N';
-		char button6 = 'N';
-		char button7 = 'N';
-		char button8 = 'N';
-		char button9 = 'N';
-		char button10 = 'N';
-		char button11 = 'N';
-		int x = 0;
-		int y = 0;
-		if (g_is_conversion_done==true){
-			x = (convert_adc_to_axis(g_ul_value));
-			if(x>500){
-				usart_put_string(USART1, "X positivo ");
-				axisX = 'P';
-				flag_change = 1;
-			} else if(x <-500){
-				usart_put_string(USART1, "X negativo ");
-				axisX = 'N';
-				flag_change = 1;
-			} else{
-				
-				if (axisX != '0'){
-					usart_put_string(USART1, "X parado ");
-					axisX = '0';
+		if (flag_PWR){
+			char button0 = 'N';
+			char button1 = 'N';
+			char button2 = 'N';
+			char button3 = 'N';
+			char button4 = 'N'; 
+			char button5 = 'N';
+			char button6 = 'N';
+			char button7 = 'N';
+			char button8 = 'N';
+			char button9 = 'N';
+			char button10 = 'N';
+			char button11 = 'N';
+			int x = 0;
+			int y = 0;
+			if (g_is_conversion_done==true){
+				x = (convert_adc_to_axis(g_ul_value));
+				if(x>500){
+					usart_put_string(USART1, "X positivo ");
+					axisX = 'P';
 					flag_change = 1;
-				}
-			}
-			g_is_conversion_done = false;
-		}
-		if(g_is_res_done==true){
-			y = (convert_adc_to_axis(g_res_value));
-			if(y>500){
-				usart_put_string(USART1, "Y positivo \n");
-				axisY = 'P';
-				flag_change = 1;
-				} else if(y <-500){
-				usart_put_string(USART1, "Y negativo \n");
-				axisY = 'N';
-				flag_change = 1;
-				} else{
-				if (axisY != '0'){
-					usart_put_string(USART1, "Y parado \n");
-					axisY = '0';
+					} else if(x <-500){
+					usart_put_string(USART1, "X negativo ");
+					axisX = 'N';
 					flag_change = 1;
+					} else{
+					
+					if (axisX != '0'){
+						usart_put_string(USART1, "X parado ");
+						axisX = '0';
+						flag_change = 1;
+					}
 				}
+				g_is_conversion_done = false;
 			}
-			g_is_res_done = false;
-		}
-		
-		
-		
-		if(flag_but0) {
-			if(value_but0){
-				pio_clear(PIOC, LED_PIO_IDX_MASK);
-				usart_put_string(USART1, "Botao do analogico apertado \n");
-				button0 = '1';
+			if(g_is_res_done==true){
+				y = (convert_adc_to_axis(g_res_value));
+				if(y>500){
+					usart_put_string(USART1, "Y positivo \n");
+					axisY = 'P';
+					flag_change = 1;
+					} else if(y <-500){
+					usart_put_string(USART1, "Y negativo \n");
+					axisY = 'N';
+					flag_change = 1;
+					} else{
+					if (axisY != '0'){
+						usart_put_string(USART1, "Y parado \n");
+						axisY = '0';
+						flag_change = 1;
+					}
+				}
+				g_is_res_done = false;
+			}
+			
+			
+			
+			if(flag_but0) {
+				if(value_but0){
+					pio_clear(PIOC, LED_PIO_IDX_MASK);
+					usart_put_string(USART1, "Botao do analogico apertado \n");
+					button0 = '1';
+				}
+				else{
+					pio_set(PIOC, LED_PIO_IDX_MASK);
+					
+					button0 = '0';
+				}
+				flag_but0 = 0;
+				flag_change = 1;
+			}
+			if(flag_but1) {
+				if(value_but1){
+					usart_put_string(USART1, "Botao 1 apertado \n");
+					
+					pio_clear(PIOC, LED_PIO_IDX_MASK);
+					button1 = '1';
+				}
+				else{
+					pio_set(PIOC, LED_PIO_IDX_MASK);
+					button1 = '0';
+				}
+				flag_but1 = 0;
+				flag_change = 1;
+			}
+			if(flag_but2) {
+				if(value_but2){
+					pio_clear(PIOC, LED_PIO_IDX_MASK);
+					usart_put_string(USART1, "Botao 2 apertado \n");
+					button2 = '1';
+				}
+				else{
+					pio_set(PIOC, LED_PIO_IDX_MASK);
+					button2 = '0';
+				}
+				flag_but2 = 0;
+				flag_change = 1;
+			}
+			if(flag_but3) {
+				if(value_but3){
+					pio_clear(PIOC, LED_PIO_IDX_MASK);
+					usart_put_string(USART1, "Botao 3 apertado \n");
+					button3 = '1';
+				}
+				else{
+					pio_set(PIOC, LED_PIO_IDX_MASK);
+					button3 = '0';
+				}
+				flag_but3 = 0;
+				flag_change = 1;
+			}
+			if(flag_but4) {
+				if(value_but4){
+					pio_clear(PIOC, LED_PIO_IDX_MASK);
+					usart_put_string(USART1, "Botao 4 apertado \n");
+					button4 = '1';
+				}
+				else{
+					pio_set(PIOC, LED_PIO_IDX_MASK);
+					button4 = '0';
+				}
+				flag_but4 = 0;
+				flag_change = 1;
+			}
+			if(flag_but5) {
+				if(value_but5){
+					pio_clear(PIOC, LED_PIO_IDX_MASK);
+					
+					button5 = '1';
+				}
+				else{
+					pio_set(PIOC, LED_PIO_IDX_MASK);
+					button5 = '0';
+				}
+				flag_but5 = 0;
+				flag_change = 1;
+			}
+			if(flag_but6) {
+				if(value_but6){
+					pio_clear(PIOC, LED_PIO_IDX_MASK);
+					
+					button6 = '1';
+				}
+				else{
+					pio_set(PIOC, LED_PIO_IDX_MASK);
+					button6 = '0';
+				}
+				flag_but6 = 0;
+				flag_change = 1;
+			}
+			if(flag_but7) {
+				if(value_but7){
+					pio_clear(PIOC, LED_PIO_IDX_MASK);
+					
+					button7 = '1';
+				}
+				else{
+					pio_set(PIOC, LED_PIO_IDX_MASK);
+					button7 = '0';
+				}
+				flag_but7 = 0;
+				flag_change = 1;
+			}
+			if(flag_but8) {
+				if(value_but8){
+					usart_put_string(USART1, "Botao 8 apertado \n");
+					
+					pio_clear(PIOC, LED_PIO_IDX_MASK);
+					
+					button8 = '1';
+				}
+				else{
+					pio_set(PIOC, LED_PIO_IDX_MASK);
+					button8 = '0';
+				}
+				flag_but8 = 0;
+				flag_change = 1;
+			}
+			if(flag_but9) {
+				if(value_but9){
+					usart_put_string(USART1, "Botao 9 apertado \n");
+					
+					pio_clear(PIOC, LED_PIO_IDX_MASK);
+					
+					button9 = '1';
+				}
+				else{
+					pio_set(PIOC, LED_PIO_IDX_MASK);
+					button9 = '0';
+				}
+				flag_but9 = 0;
+				flag_change = 1;
+			}
+			if(flag_but10) {
+				if(value_but10){
+					usart_put_string(USART1, "Botao 10 apertado \n");
+					
+					pio_clear(PIOC, LED_PIO_IDX_MASK);
+					
+					button10 = '1';
+				}
+				else{
+					pio_set(PIOC, LED_PIO_IDX_MASK);
+					button10 = '0';
+				}
+				flag_but10 = 0;
+				flag_change = 1;
+			}
+			if(flag_but11) {
+				if(value_but11){
+					usart_put_string(USART1, "Botao 11 apertado \n");
+					
+					pio_clear(PIOC, LED_PIO_IDX_MASK);
+					
+					button11 = '1';
+				}
+				else{
+					pio_set(PIOC, LED_PIO_IDX_MASK);
+					button11 = '0';
+				}
+				flag_but11 = 0;
+				flag_change = 1;
+			}
+			if(flag_change){
+				while(!usart_is_tx_ready(UART_COMM));
+				usart_write(UART_COMM, button0);
+				while(!usart_is_tx_ready(UART_COMM));
+				usart_write(UART_COMM, button1);
+				while(!usart_is_tx_ready(UART_COMM));
+				usart_write(UART_COMM, button2);
+				while(!usart_is_tx_ready(UART_COMM));
+				usart_write(UART_COMM, button3);
+				while(!usart_is_tx_ready(UART_COMM));
+				usart_write(UART_COMM, button4);
+				while(!usart_is_tx_ready(UART_COMM));
+				usart_write(UART_COMM, button5);
+				while(!usart_is_tx_ready(UART_COMM));
+				usart_write(UART_COMM, button6);
+				while(!usart_is_tx_ready(UART_COMM));
+				usart_write(UART_COMM, button7);
+				while(!usart_is_tx_ready(UART_COMM));
+				usart_write(UART_COMM, button8);
+				while(!usart_is_tx_ready(UART_COMM));
+				usart_write(UART_COMM, button9);
+				while(!usart_is_tx_ready(UART_COMM));
+				usart_write(UART_COMM, button10);
+				while(!usart_is_tx_ready(UART_COMM));
+				usart_write(UART_COMM, button11);
+				while(!usart_is_tx_ready(UART_COMM));
+				usart_write(UART_COMM, axisX);
+				while(!usart_is_tx_ready(UART_COMM));
+				usart_write(UART_COMM, axisY);
+				while(!usart_is_tx_ready(UART_COMM));
+				usart_write(UART_COMM, eof);
+				flag_change = 0;
 			}
 			else{
-				pio_set(PIOC, LED_PIO_IDX_MASK);
-				
-				button0 = '0';
+				pmc_sleep(SAM_PM_SMODE_SLEEP_WFI);
 			}
-			flag_but0 = 0;
-			flag_change = 1;
-		}
-		if(flag_but1) {
-			if(value_but1){
-				usart_put_string(USART1, "Botao 1 apertado \n");
-				
-				pio_clear(PIOC, LED_PIO_IDX_MASK);
-				button1 = '1';
-			}
-			else{
-				pio_set(PIOC, LED_PIO_IDX_MASK);
-				button1 = '0';
-			}
-			flag_but1 = 0;
-			flag_change = 1;
-		}
-		if(flag_but2) {
-			if(value_but2){
-				pio_clear(PIOC, LED_PIO_IDX_MASK);
-				usart_put_string(USART1, "Botao 2 apertado \n");
-				button2 = '1';
-			}
-			else{
-				pio_set(PIOC, LED_PIO_IDX_MASK);
-				button2 = '0';
-			}
-			flag_but2 = 0;
-			flag_change = 1;
-		}
-		if(flag_but3) {
-			if(value_but3){
-				pio_clear(PIOC, LED_PIO_IDX_MASK);
-				usart_put_string(USART1, "Botao 3 apertado \n");
-				button3 = '1';
-			}
-			else{
-				pio_set(PIOC, LED_PIO_IDX_MASK);
-				button3 = '0';
-			}
-			flag_but3 = 0;
-			flag_change = 1;
-		}
-		if(flag_but4) {
-			if(value_but4){
-				pio_clear(PIOC, LED_PIO_IDX_MASK);
-				usart_put_string(USART1, "Botao 4 apertado \n");
-				button4 = '1';
-			}
-			else{
-				pio_set(PIOC, LED_PIO_IDX_MASK);
-				button4 = '0';
-			}
-			flag_but4 = 0;
-			flag_change = 1;
-		}
-		if(flag_but5) {
-			if(value_but5){
-				pio_clear(PIOC, LED_PIO_IDX_MASK);
-				
-				button5 = '1';
-			}
-			else{
-				pio_set(PIOC, LED_PIO_IDX_MASK);
-				button5 = '0';
-			}
-			flag_but5 = 0;
-			flag_change = 1;
-		}
-		if(flag_but6) {
-			if(value_but6){
-				pio_clear(PIOC, LED_PIO_IDX_MASK);
-				
-				button6 = '1';
-			}
-			else{
-				pio_set(PIOC, LED_PIO_IDX_MASK);
-				button6 = '0';
-			}
-			flag_but6 = 0;
-			flag_change = 1;
-		}
-		if(flag_but7) {
-			if(value_but7){
-				pio_clear(PIOC, LED_PIO_IDX_MASK);
-				
-				button7 = '1';
-			}
-			else{
-				pio_set(PIOC, LED_PIO_IDX_MASK);
-				button7 = '0';
-			}
-			flag_but7 = 0;
-			flag_change = 1;
-		}
-		if(flag_but8) {
-			if(value_but8){
-				usart_put_string(USART1, "Botao 8 apertado \n");
-				
-				pio_clear(PIOC, LED_PIO_IDX_MASK);
-				
-				button8 = '1';
-			}
-			else{
-				pio_set(PIOC, LED_PIO_IDX_MASK);
-				button8 = '0';
-			}
-			flag_but8 = 0;
-			flag_change = 1;
-		}
-		if(flag_but9) {
-			if(value_but9){
-				usart_put_string(USART1, "Botao 9 apertado \n");
-				
-				pio_clear(PIOC, LED_PIO_IDX_MASK);
-				
-				button9 = '1';
-			}
-			else{
-				pio_set(PIOC, LED_PIO_IDX_MASK);
-				button9 = '0';
-			}
-			flag_but9 = 0;
-			flag_change = 1;
-		}
-		if(flag_but10) {
-			if(value_but10){
-				usart_put_string(USART1, "Botao 10 apertado \n");
-				
-				pio_clear(PIOC, LED_PIO_IDX_MASK);
-				
-				button10 = '1';
-			}
-			else{
-				pio_set(PIOC, LED_PIO_IDX_MASK);
-				button10 = '0';
-			}
-			flag_but10 = 0;
-			flag_change = 1;
-		}
-		if(flag_but11) {
-			if(value_but11){
-				usart_put_string(USART1, "Botao 11 apertado \n");
-				
-				pio_clear(PIOC, LED_PIO_IDX_MASK);
-				
-				button11 = '1';
-			}
-			else{
-				pio_set(PIOC, LED_PIO_IDX_MASK);
-				button11 = '0';
-			}
-			flag_but11 = 0;
-			flag_change = 1;
-		}
-		if(flag_change){
-			while(!usart_is_tx_ready(UART_COMM));
-			usart_write(UART_COMM, button0);
-			while(!usart_is_tx_ready(UART_COMM));
-			usart_write(UART_COMM, button1);
-			while(!usart_is_tx_ready(UART_COMM));
-			usart_write(UART_COMM, button2);
-			while(!usart_is_tx_ready(UART_COMM));
-			usart_write(UART_COMM, button3);
-			while(!usart_is_tx_ready(UART_COMM));
-			usart_write(UART_COMM, button4);
-			while(!usart_is_tx_ready(UART_COMM));
-			usart_write(UART_COMM, button5);
-			while(!usart_is_tx_ready(UART_COMM));
-			usart_write(UART_COMM, button6);
-			while(!usart_is_tx_ready(UART_COMM));
-			usart_write(UART_COMM, button7);
-			while(!usart_is_tx_ready(UART_COMM));
-			usart_write(UART_COMM, button8);
-			while(!usart_is_tx_ready(UART_COMM));
-			usart_write(UART_COMM, button9);
-			while(!usart_is_tx_ready(UART_COMM));
-			usart_write(UART_COMM, button10);
-			while(!usart_is_tx_ready(UART_COMM));
-			usart_write(UART_COMM, button11);
-			while(!usart_is_tx_ready(UART_COMM));
-			usart_write(UART_COMM, axisX);
-			while(!usart_is_tx_ready(UART_COMM));
-			usart_write(UART_COMM, axisY);
-			while(!usart_is_tx_ready(UART_COMM));
-			usart_write(UART_COMM, eof);
-			flag_change = 0;
 		}
 		else{
 			pmc_sleep(SAM_PM_SMODE_SLEEP_WFI);
