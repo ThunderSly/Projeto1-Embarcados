@@ -2,11 +2,12 @@ import serial
 import argparse
 import time
 import logging
-import pyvjoy # Windows apenas
+import pyvjoy  # Windows apenas
+
 
 class MyControllerMap:
     def __init__(self):
-        self.button = { 'A': 1, 'B': 2, 'Analog':3, 'PAxisX':4,'NAxisX':5,'PAxisY':6,'NAxisY':7, 'Right':8,'Up':9,'Left':10,'Down':11}
+        self.button = {'A': 1, 'B': 2, 'Analog': 3, 'PAxisX': 4, 'NAxisX': 5, 'PAxisY': 6, 'NAxisY': 7, 'Right': 8, 'Up': 9, 'Left': 10, 'Down': 11, 'C' : 12, 'D' : 13 }
 
 
 class SerialControllerInterface:
@@ -22,27 +23,18 @@ class SerialControllerInterface:
         self.incoming = '0'
 
     def update(self):
-        ## Sync protocol
+        # Sync protocol
         while self.incoming != b'X':
             self.incoming = self.ser.read()
             logging.debug("Receivelllld INCOMING: {}".format(self.incoming))
 
         data = self.ser.read(14)
-        #dataAnalog = self.ser.read(14)
-        #print(data)
-        #print(data)
         logging.debug("Received DATA: {}".format(data))
         data_format = (bytearray(data)).decode('ascii')
-        #print(data_format)
-        um,dois,A,B, cinco, seis, sete, oito, nove, dez,onze,doze, X, Y = data_format
-        
-        #print(yAxis)
-        #print(A)
-        #print(B)
+        um, dois, A, B, cinco, seis, sete, oito, nove, dez, onze, doze, X, Y = data_format
 
         # Joystick
-        
-        
+
         if nove == '1':
             logging.info("Sending L")
             self.j.set_button(self.mapping.button['Left'], 1)
@@ -50,7 +42,7 @@ class SerialControllerInterface:
         elif nove == '0':
             self.j.set_button(self.mapping.button['Left'], 0)
 
-        if dez== '1':
+        if dez == '1':
             logging.info("Sending D")
             self.j.set_button(self.mapping.button['Down'], 1)
             print("Down")
@@ -64,21 +56,18 @@ class SerialControllerInterface:
         elif onze == '0':
             self.j.set_button(self.mapping.button['Right'], 0)
 
-        if doze== '1':
+        if doze == '1':
             logging.info("Sending U")
             self.j.set_button(self.mapping.button['Up'], 1)
             print("Up")
         elif doze == '0':
             self.j.set_button(self.mapping.button['Up'], 0)
 
-
-
-        
         if X == 'P':
             logging.info("Sending X")
             self.j.set_button(self.mapping.button['PAxisX'], 1)
             self.j.set_button(self.mapping.button['NAxisX'], 0)
-            
+
             print("Analogico X positivo")
         elif X == 'N':
             logging.info("Sending X")
@@ -94,7 +83,7 @@ class SerialControllerInterface:
             logging.info("Sending Y")
             self.j.set_button(self.mapping.button['PAxisY'], 1)
             self.j.set_button(self.mapping.button['NAxisY'], 0)
-            
+
             print("Analogico Y positivo")
         elif Y == 'N':
             logging.info("Sending Y")
@@ -106,8 +95,6 @@ class SerialControllerInterface:
             self.j.set_button(self.mapping.button['PAxisY'], 0)
             self.j.set_button(self.mapping.button['NAxisY'], 0)
 
-
-
         if um == '1':
             logging.info("Sending A")
             self.j.set_button(self.mapping.button['Analog'], 1)
@@ -115,7 +102,12 @@ class SerialControllerInterface:
         elif um == '0':
             self.j.set_button(self.mapping.button['Analog'], 0)
 
-
+        if dois == '1':
+            logging.info("Sending A")
+            self.j.set_button(self.mapping.button['C'], 1)
+            print("C")
+        elif dois == '0':
+            self.j.set_button(self.mapping.button['C'], 0)
 
         if A == '1':
             logging.info("Sending A")
@@ -124,13 +116,19 @@ class SerialControllerInterface:
         elif A == '0':
             self.j.set_button(self.mapping.button['A'], 0)
 
-
         if B == '1':
             logging.info("Sending B")
             self.j.set_button(self.mapping.button['B'], 1)
             print("B")
         elif B == '0':
             self.j.set_button(self.mapping.button['B'], 0)
+        
+        if cinco == '1':
+            logging.info("Sending A")
+            self.j.set_button(self.mapping.button['D'], 1)
+            print("D")
+        elif cinco == '0':
+            self.j.set_button(self.mapping.button['D'], 0)
         self.incoming = self.ser.read()
 
 
@@ -158,11 +156,13 @@ if __name__ == '__main__':
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
 
-    print("Connection to {} using {} interface ({})".format(args.serial_port, args.controller_interface, args.baudrate))
+    print("Connection to {} using {} interface ({})".format(
+        args.serial_port, args.controller_interface, args.baudrate))
     if args.controller_interface == 'dummy':
         controller = DummyControllerInterface()
     else:
-        controller = SerialControllerInterface(port=args.serial_port, baudrate=args.baudrate)
+        controller = SerialControllerInterface(
+            port=args.serial_port, baudrate=args.baudrate)
 
     while True:
         controller.update()

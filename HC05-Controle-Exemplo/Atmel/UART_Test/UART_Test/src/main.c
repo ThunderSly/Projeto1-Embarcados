@@ -89,7 +89,6 @@ volatile bool g_delay = false;
 #define BUT1_PIO_IDX_MASK		(1 << BUT1_PIO_IDX)
 #define BUT1_DEBOUNCING_VALUE   79
 
-
 #define BUT2_PIO_ID				ID_PIOC
 #define BUT2_PIO				PIOC
 #define BUT2_PIO_IDX			31
@@ -101,6 +100,12 @@ volatile bool g_delay = false;
 #define BUT3_PIO_IDX			19
 #define BUT3_PIO_IDX_MASK		(1 << BUT3_PIO_IDX)
 #define BUT3_DEBOUNCING_VALUE   79
+
+#define BUT4_PIO_ID				ID_PIOD
+#define BUT4_PIO				PIOD
+#define BUT4_PIO_IDX			21
+#define BUT4_PIO_IDX_MASK		(1 << BUT4_PIO_IDX)
+#define BUT4_DEBOUNCING_VALUE   79
 
 // Joystick 
 #define BUT8_PIO_ID				ID_PIOA
@@ -310,11 +315,11 @@ void Button3_Handler(void){
 	value_but3 = !pio_get(BUT3_PIO, PIO_INPUT, BUT3_PIO_IDX_MASK);
 }
 
-// void Button4_Handler(void){
-// 	flag_but4 = 1;
-// 	value_but4 = !pio_get(BUT4_PIO, PIO_INPUT, BUT4_PIO_IDX_MASK);
-// }
-// 
+void Button4_Handler(void){
+	flag_but4 = 1;
+	value_but4 = !pio_get(BUT4_PIO, PIO_INPUT, BUT4_PIO_IDX_MASK);
+}
+
 // void Button5_Handler(void){
 // 	flag_but5 = 1;
 // 	value_but5 = !pio_get(BUT5_PIO, PIO_INPUT, BUT5_PIO_IDX_MASK);
@@ -403,8 +408,6 @@ static void config_ADC_TEMP_RES(void){
 	//afec_channel_enable(AFEC0, AFEC_CHANNEL_RES_PIN);
 }
 
-
-
 void TC_init(Tc * TC, int ID_TC, int TC_CHANNEL, int freq){
 	uint32_t ul_div;
 	uint32_t ul_tcclks;
@@ -434,45 +437,43 @@ void TC_init(Tc * TC, int ID_TC, int TC_CHANNEL, int freq){
 	/* Inicializa o canal 0 do TC */
 	tc_start(TC, TC_CHANNEL);
 }
+
 void BUT_init(void){
 	//TERMINAR INIT PARA TODOS OS BOTOES
 	
-	pmc_enable_periph_clk(BUT2_PIO_ID);
+	pmc_enable_periph_clk(ID_PIOA);
+	pmc_enable_periph_clk(ID_PIOB);
+	pmc_enable_periph_clk(ID_PIOC);
+	pmc_enable_periph_clk(ID_PIOD);
+	
+	pio_set_input(BUT0_PIO, BUT0_PIO_IDX_MASK, PIO_PULLUP | PIO_DEBOUNCE);	
 	pio_set_input(BUT1_PIO, BUT1_PIO_IDX_MASK, PIO_PULLUP | PIO_DEBOUNCE);
-	
 	pio_set_input(BUT2_PIO, BUT2_PIO_IDX_MASK, PIO_PULLUP | PIO_DEBOUNCE);
-	
-	pmc_enable_periph_clk(BUT3_PIO_ID);
 	pio_set_input(BUT3_PIO, BUT3_PIO_IDX_MASK, PIO_PULLUP | PIO_DEBOUNCE);
-	
-	pmc_enable_periph_clk(BUT0_PIO_ID);
-	pio_set_input(BUT0_PIO, BUT0_PIO_IDX_MASK, PIO_PULLUP | PIO_DEBOUNCE);
-	
-	pmc_enable_periph_clk(BUT8_PIO_ID);
+	pio_set_input(BUT4_PIO, BUT4_PIO_IDX_MASK, PIO_PULLUP | PIO_DEBOUNCE);
+
 	pio_set_input(BUT8_PIO, BUT8_PIO_IDX_MASK, PIO_PULLUP | PIO_DEBOUNCE);
-	
-	pmc_enable_periph_clk(BUT9_PIO_ID);
 	pio_set_input(BUT9_PIO, BUT9_PIO_IDX_MASK, PIO_PULLUP | PIO_DEBOUNCE);
-	
-	pmc_enable_periph_clk(BUT10_PIO_ID);
 	pio_set_input(BUT10_PIO, BUT10_PIO_IDX_MASK, PIO_PULLUP | PIO_DEBOUNCE);
-	
-	//pmc_enable_periph_clk(BUT11_PIO_ID);
 	pio_set_input(BUT11_PIO, BUT11_PIO_IDX_MASK, PIO_PULLUP | PIO_DEBOUNCE);
 
 	pio_enable_interrupt(BUT0_PIO, BUT0_PIO_IDX_MASK);
 	pio_enable_interrupt(BUT1_PIO, BUT1_PIO_IDX_MASK);
 	pio_enable_interrupt(BUT2_PIO, BUT2_PIO_IDX_MASK);
 	pio_enable_interrupt(BUT3_PIO, BUT3_PIO_IDX_MASK);
+	pio_enable_interrupt(BUT4_PIO, BUT4_PIO_IDX_MASK);
+	
 	pio_enable_interrupt(BUT8_PIO, BUT8_PIO_IDX_MASK);
 	pio_enable_interrupt(BUT9_PIO, BUT9_PIO_IDX_MASK);
 	pio_enable_interrupt(BUT10_PIO, BUT10_PIO_IDX_MASK);
 	pio_enable_interrupt(BUT11_PIO, BUT11_PIO_IDX_MASK);
 	
 	pio_handler_set(BUT0_PIO, BUT0_PIO_ID, BUT0_PIO_IDX_MASK, PIO_IT_EDGE, Button0_Handler);
-	//pio_handler_set(BUT1_PIO, BUT1_PIO_ID, BUT1_PIO_IDX_MASK, PIO_IT_EDGE, Button1_Handler);
+	pio_handler_set(BUT1_PIO, BUT1_PIO_ID, BUT1_PIO_IDX_MASK, PIO_IT_EDGE, Button1_Handler);
 	pio_handler_set(BUT2_PIO, BUT2_PIO_ID, BUT2_PIO_IDX_MASK, PIO_IT_EDGE, Button2_Handler);
 	pio_handler_set(BUT3_PIO, BUT3_PIO_ID, BUT3_PIO_IDX_MASK, PIO_IT_EDGE, Button3_Handler);
+	pio_handler_set(BUT4_PIO, BUT4_PIO_ID, BUT4_PIO_IDX_MASK, PIO_IT_EDGE, Button4_Handler);
+	
 	pio_handler_set(BUT8_PIO, BUT8_PIO_ID, BUT8_PIO_IDX_MASK, PIO_IT_EDGE, Button8_Handler);
 	pio_handler_set(BUT9_PIO, BUT9_PIO_ID, BUT9_PIO_IDX_MASK, PIO_IT_EDGE, Button9_Handler);
 	pio_handler_set(BUT10_PIO, BUT10_PIO_ID, BUT10_PIO_IDX_MASK, PIO_IT_EDGE, Button10_Handler);
@@ -481,17 +482,17 @@ void BUT_init(void){
 	NVIC_EnableIRQ(BUT0_PIO_ID);
 	NVIC_SetPriority(BUT0_PIO_ID, 1);
 	
-	NVIC_EnableIRQ(BUT11_PIO_ID);
-	NVIC_SetPriority(BUT11_PIO_ID, 1);
-	
-	//NVIC_EnableIRQ(BUT1_PIO_ID);
-	//NVIC_SetPriority(BUT1_PIO_ID, 1);
+	NVIC_EnableIRQ(BUT1_PIO_ID);
+	NVIC_SetPriority(BUT1_PIO_ID, 1);
 	
 	NVIC_EnableIRQ(BUT2_PIO_ID);
 	NVIC_SetPriority(BUT2_PIO_ID, 1);
 	
 	NVIC_EnableIRQ(BUT3_PIO_ID);
 	NVIC_SetPriority(BUT3_PIO_ID, 1);
+
+	NVIC_EnableIRQ(BUT4_PIO_ID);
+	NVIC_SetPriority(BUT4_PIO_ID, 1);
 	
 	NVIC_EnableIRQ(BUT8_PIO_ID);
 	NVIC_SetPriority(BUT8_PIO_ID, 1);
@@ -502,12 +503,13 @@ void BUT_init(void){
 	NVIC_EnableIRQ(BUT10_PIO_ID);
 	NVIC_SetPriority(BUT10_PIO_ID, 1);
 	
+	NVIC_EnableIRQ(BUT11_PIO_ID);
+	NVIC_SetPriority(BUT11_PIO_ID, 1);
+	
 	
 };
 
-int main (void)
-{
-	printf("comecou");
+int main (void){
 	board_init();
 	sysclk_init();
 	delay_init();
@@ -521,7 +523,6 @@ int main (void)
 	
 	TC_init(TC0, ID_TC1, 1, 1);
 	TC_init(TC0, ID_TC0, 0, 10);
-	pmc_enable_periph_clk(LED_PIO_ID);
 	pio_set_output(LED_PIO, LED_PIO_IDX_MASK, 0, 0, 0);
 	pio_set(PIOC, LED_PIO_IDX_MASK);
 	
@@ -661,7 +662,7 @@ int main (void)
 		if(flag_but4) {
 			if(value_but4){
 				pio_clear(PIOC, LED_PIO_IDX_MASK);
-				
+				usart_put_string(USART1, "Botao 4 apertado \n");
 				button4 = '1';
 			}
 			else{
