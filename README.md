@@ -4,18 +4,18 @@ Arcade bluetooth controller via Atmel
 - C
     - Bluetooth
     - RTOS
-    - buzzer
+    - Buzzer
     - LED 
-    - anal'ogico (x,y)
+    - Analógico (x,y)
     
 - B (+2 itens)
 - A (+2 itens)
-   - touchpad
-   - fita de led
+   - Touchpad
+   - Fita de led
    - USB
-   - volume do som
-   - acelerometro
+   - Volume do som
+   - Acelerômetro
    - 2 controles
    - Caixa Definitiva
-   - combos (macro)
-   - gravar macro
+   - Combos (macro)
+   - Gravar macro
